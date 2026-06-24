@@ -1,3 +1,14 @@
+---
+title: TopRank
+emoji: 🚀
+colorFrom: blue
+colorTo: green
+sdk: gradio
+sdk_version: 3.50.2
+app_file: app.py
+pinned: false
+---
+
 # toprank 🚀
 
 **toprank** is an ultra-fast, production-ready candidate screening and ranking engine. It is designed to identify elite **Senior AI/ML Engineers** with expertise in retrieval, ranking, and vector search from a pool of 100,000 candidates in under 2 minutes on standard CPU-only hardware.
