@@ -1,0 +1,72 @@
+# Redrob Hackathon — Submission Metadata
+# The fields here match what you submit via the portal at upload time.
+
+# ============================================================================
+# Team identity
+# ============================================================================
+team_name: "Punith C"
+
+primary_contact:
+  name: "Punith C"
+  email: "punith.kumar@example.com"   # TODO: Replace with your real email before submission
+  phone: "+91-9876543210"             # TODO: Replace with your real phone before submission
+
+team_members:
+  - name: "Punith C"
+    email: "punith.kumar@example.com"  # TODO: Replace with your real email
+    role: "ML Engineer"
+
+# ============================================================================
+# Code and reproducibility
+# ============================================================================
+github_repo: "https://github.com/Punith968/TopRank"
+sandbox_link: "https://huggingface.co/spaces/Punith3068/TopRank"
+
+reproduce_command: "python rank.py --candidates ./data/candidates.jsonl --out ./submission.csv"
+
+# ============================================================================
+# Compute environment
+# ============================================================================
+compute:
+  platform: "Local CPU Machine"
+  cpu_cores: 8
+  ram_gb: 16
+  python_version: "3.10.12"
+  os: "Windows 11"
+  uses_gpu_for_inference: false
+  has_network_during_ranking: false
+  pre_computation_required: true
+  pre_computation_time_minutes: 3.5
+
+# ============================================================================
+# AI tools declaration
+# ============================================================================
+ai_tools_used:
+  - "Claude"
+  - "GitHub Copilot"
+
+ai_usage_summary: |
+  Used Claude for pipeline refactoring, honeypot logic debugging, and schema compliance validation.
+  Used GitHub Copilot for boilerplate code auto-completion.
+  No candidate data was uploaded or sent to external APIs during ranking execution.
+
+# ============================================================================
+# Approach summary
+# ============================================================================
+methodology_summary: |
+  We use a hybrid approach that separates heavy semantic model inference from ranking runtime:
+  1. Offline Pre-computation: Embed candidate profiles and compute cosine similarity against the job description using all-MiniLM-L6-v2, saving scores in candidate_embeddings.npz.
+  2. Honeypot Firewall: Evaluates candidates against 17 strict logical filters (career timeline consistency, tech release date violations, company founding year checks, experience-title mismatch, PhD speed check, overlapping education, and more) to immediately reject anomalies.
+  3. Feature Engineering: Extracts 18 behavioural signals including JD-specific checks (LangChain-only penalty, CV/speech domain penalty, engagement recency from last_active_date) alongside consulting-firm penalties and job-hopper indicators.
+  4. Scoring: Weighted combination (semantic=25%, career=25%, skill=20%, behavioral=20%, availability=10%) with Gaussian YoE suitability curve centred at 7 years.
+  5. Reasoning: Fact-based, candidate-specific natural language justifications referencing actual profile data (title, company, skills, concerns).
+
+# ============================================================================
+# Declarations
+# ============================================================================
+declarations:
+  read_submission_spec: true
+  code_is_original_work: true
+  no_collusion: true
+  honeypot_check_done: true
+  reproduction_tested: true

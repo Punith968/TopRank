@@ -1,16 +1,9 @@
-# Data files (exclude large raw datasets and test submissions)
+# Data files (exclude large raw datasets only)
 data/candidates.jsonl
 data/test_candidates.jsonl
 data/test_submission.csv
 data/top100_candidates_profiles.jsonl
 data/sample_submission.csv
-candidate_embeddings.npz
-*.csv
-
-# Hackathon specific configuration & metadata
-submission_metadata.yaml
-validate_submission.py
-.agents/
 
 # Local Python cache & system files
 __pycache__/
@@ -23,3 +16,4 @@ ENV/
 .idea/
 .vscode/
 .DS_Store
+.agents/

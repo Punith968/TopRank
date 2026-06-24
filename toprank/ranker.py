@@ -27,6 +27,10 @@ def compute_final_score(features_df: pd.DataFrame, similarities: np.ndarray) -> 
             c_score -= 0.4
         if row['is_pure_research'] > 0.5:
             c_score -= 0.2
+        if row.get('is_langchain_only', 0) > 0.5:
+            c_score -= 0.15
+        if row.get('is_cv_speech_only', 0) > 0.5:
+            c_score -= 0.15
         c_score = max(0.0, c_score)
         
         sk_count = row['skills_count']
@@ -36,9 +40,10 @@ def compute_final_score(features_df: pd.DataFrame, similarities: np.ndarray) -> 
         s_rel = max(0.0, s_rel)
         
         b_score = (
-            row['recruiter_response_rate'] * 0.4 +
-            row['interview_completion_rate'] * 0.3 +
-            row['offer_acceptance_rate'] * 0.3
+            row['recruiter_response_rate'] * 0.3 +
+            row['interview_completion_rate'] * 0.25 +
+            row['offer_acceptance_rate'] * 0.25 +
+            row.get('engagement_score', 0.5) * 0.2
         )
         if row['has_github'] > 0.5:
             b_score += 0.1
