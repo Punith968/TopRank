@@ -50,6 +50,44 @@ def detect_honeypot_record(row) -> bool:
             end = edu.get('end_year')
             if start and end and end < start:
                 return True
+    # Trap 8: Skill duration exceeds YoE
+    for skill in skills:
+        if isinstance(skill, dict):
+            dur = skill.get('duration_months', 0) or 0
+            if yoe > 0 and dur > (yoe * 12 + 24):
+                return True
+
+    # Trap 9: Chronological Tech Release Impossibility
+    recent_techs = {
+        'qlora': 37, 'llamaindex': 43, 'langchain': 44, 'prompt engineering': 48,
+        'chatgpt': 43, 'peft': 40, 'gpt-4': 39, 'gpt4': 39, 'bge': 34, 'e5': 42
+    }
+    for skill in skills:
+        if isinstance(skill, dict):
+            sname = str(skill.get('name', '')).lower()
+            dur = skill.get('duration_months', 0) or 0
+            for tech, max_dur in recent_techs.items():
+                if tech in sname and dur > max_dur:
+                    return True
+
+    # Trap 10: Career Span vs YoE Mismatch
+    if career and yoe > 0:
+        start_dates = []
+        for job in career:
+            if isinstance(job, dict) and job.get('start_date'):
+                try:
+                    s_parts = job['start_date'].split('-')
+                    if len(s_parts) == 3:
+                        syear = int(s_parts[0])
+                        smonth = int(s_parts[1])
+                        elapsed_months = (2026 - syear) * 12 + (6 - smonth)
+                        start_dates.append(elapsed_months)
+                except (ValueError, IndexError):
+                    pass
+        if start_dates:
+            max_elapsed = max(start_dates)
+            if (yoe * 12) > (max_elapsed + 12):
+                return True
     return False
 
 def detect_honeypots(df: pd.DataFrame) -> pd.Series:
