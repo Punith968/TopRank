@@ -1,8 +1,9 @@
 FROM python:3.10-slim
 
+RUN useradd -m -u 1000 user
+RUN mkdir -p /app && chown -R user:user /app
 WORKDIR /app
 
-RUN useradd -m -u 1000 user
 USER user
 ENV PATH="/home/user/.local/bin:$PATH"
 
