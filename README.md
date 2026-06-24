@@ -1,11 +1,3 @@
----
-title: TopRank
-emoji: 🚀
-colorFrom: blue
-colorTo: green
-sdk: docker
-pinned: false
----
 
 # toprank 🚀
 
@@ -103,28 +95,46 @@ toprank/
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start & Reproducibility (Stage 3 Verification)
 
-### Installation
+To comply with the Hackathon's Stage 3 requirements, here are the exact commands to reproduce the `submission.csv`.
+
+### Option 1: Run via Docker (Recommended)
+This perfectly simulates the sandboxed environment where the code will be evaluated.
+1. Build the Docker image:
+   ```bash
+   docker build -t toprank .
+   ```
+2. Run the ranking pipeline inside the container:
+   ```bash
+   docker run --rm -v $(pwd):/app toprank python rank.py --candidates ./data/candidates.jsonl --out ./submission.csv
+   ```
+
+### Option 2: Run Locally (Native)
 1. Clone the repository:
    ```bash
-   git clone https://github.com/NaveenGP2005/candiRank.git
-   cd candiRank
+   git clone https://github.com/Punith968/TopRank.git
+   cd TopRank
    ```
 2. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-
-### Option A: Run Screening Pipeline
-1. Run the screening script:
+3. Run the ranking script:
    ```bash
    python rank.py --candidates ./data/candidates.jsonl --out ./submission.csv
    ```
-2. Validate output format:
+4. Validate the generated submission file:
    ```bash
    python validate_submission.py submission.csv
    ```
+
+### Option 3: Run Interactive Sandbox UI
+Our Hugging Face Space runs a Gradio wrapper over the `rank.py` script. You can run it locally:
+```bash
+python app.py
+```
+Then open `http://localhost:7860` in your browser to upload a candidates file and download the ranked CSV.
 
 ---
 
