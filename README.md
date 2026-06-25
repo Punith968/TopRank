@@ -1,17 +1,5 @@
----
-title: TopRank
-emoji: 🚀
-colorFrom: blue
-colorTo: indigo
-sdk: gradio
-sdk_version: 4.44.1
-python_version: 3.10
-app_file: app.py
-pinned: false
----
-
 # TopRank 🚀
-Ultra-fast, production-ready candidate screening & ranking engine. Identifies elite Senior AI Retrieval/Ranking Engineers from 100,000 nuanced synthetic profiles in under 2 minutes on standard CPU-only hardware.
+Ultra-fast, production-ready candidate screening & ranking engine. Identifies elite Senior AI Retrieval/Ranking Engineers from 100,000 candidates in under 2 minutes on standard CPU-only hardware.
 
 ## 🎯 The Challenge
 Traditional candidate ranking systems fail at scale:
@@ -26,7 +14,7 @@ TopRank solves all three with a deterministic, multi-stage retrieval cascade eng
 Unlike traditional "embed-everything" approaches, TopRank uses a hybrid retrieval cascade that reduces embedding workload by 99% and separates heavy inference:
 - **O(N) Profile Validation Firewall**: Instantly filters out anomalous profiles in under 15 seconds.
 - **Pre-computed Semantic Index**: Loads pre-calculated MiniLM candidate-to-JD similarity scores in **under 0.1 seconds** at runtime, bypassing neural network bottlenecks.
-- **Total End-to-End Pipeline**: Runs in **~8.5 seconds** on standard CPU, significantly faster than the 5-minute container limit.
+- **Total End-to-End Pipeline**: Runs in **~8.5 seconds** on standard CPU, significantly faster than the 5-minute budget.
 
 ### 🎓 Context-Aware Evaluation
 Production experience matters. TopRank extracts and weights candidate experience contextually:
@@ -80,7 +68,7 @@ flowchart TD
 ## ⚡ Performance Benchmarks
 Optimized for CPU-only execution on standard hardware (16GB RAM):
 - **Offline Pre-computation**: ~7.5 minutes (Executed once locally or on GPU)
-- **Online Screening (`rank.py`)**: **~8.5 seconds** (Runs inside sandboxed CPU container)
+- **Online Screening (`rank.py`)**: **~8.5 seconds** (Runs on standard CPU hardware)
 
 ## 📁 Repository Structure
 ```
@@ -104,8 +92,8 @@ toprank/
 └── requirements.txt                   # Project dependencies
 ```
 
-## 🚀 Quick Start & Reproducibility (Stage 3 Verification)
-Follow these setup instructions and commands to reproduce the `submission.csv`.
+## 🚀 Quick Start
+Follow these setup instructions and commands to run the candidate ranking engine.
 
 ### Option A: Run Full Pipeline
 1. Clone the repository:
