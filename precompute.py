@@ -29,6 +29,7 @@ MODEL_NAME = 'all-MiniLM-L6-v2'
 def main():
     parser = argparse.ArgumentParser(description="Precompute candidate embeddings and similarities")
     parser.add_argument("--candidates", required=True, help="Path to candidates.jsonl")
+    parser.add_argument("--model", default="all-MiniLM-L6-v2", help="SentenceTransformer model name to use")
     parser.add_argument("--out", default="candidate_embeddings.npz", help="Output path for embeddings/similarities file")
     args = parser.parse_args()
 
@@ -60,8 +61,8 @@ def main():
             texts.append(' '.join(filter(None, parts)).lower())
             
     print(f"Loaded {len(candidate_ids)} candidates.")
-    print(f"Loading model '{MODEL_NAME}'...")
-    model = SentenceTransformer(MODEL_NAME)
+    print(f"Loading model '{args.model}'...")
+    model = SentenceTransformer(args.model)
     
     print("Embedding candidates...")
     candidate_embeddings = model.encode(texts, batch_size=512, show_progress_bar=True, convert_to_numpy=True)
