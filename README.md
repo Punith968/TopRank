@@ -13,7 +13,7 @@ Traditional automated candidate ranking systems fail at scale:
 * **Gullible**: Easily manipulated by keyword stuffing, resume padding, and fraudulent timeline claims.
 * **Opaque**: Black-box LLM ratings lack explainability, auditability, and deterministic reasoning.
 
-**toprank** solves all three problems by combining a high-precision **17-stage Profile Validation Firewall** with **Offline Pre-computed Semantic Embeddings** and a **Deterministic Multi-Stage Heuristic Scoring Engine**.
+**toprank** solves all three problems by combining a precision-tuned **10-stage Profile Validation Firewall** with **Offline Pre-computed Semantic Embeddings** and a **Deterministic Multi-Stage Heuristic Scoring Engine**.
 
 ---
 
@@ -50,8 +50,8 @@ flowchart TD
     I --> J[Save Ranked Top 100 Leaderboard]
 ```
 
-### 1. Profile Validation Firewall (17 Traps)
-Identifies and rejects synthetically impossible or inconsistent resumes (e.g. expert skill with 0 duration, PhD with < 4 years YoE, technology release timeline violations, company founding date violations, and overlapping education timelines at separate institutions).
+### 1. Profile Validation Firewall (10 Traps)
+Identifies and rejects clearly fraudulent profiles using conservative, logically-impossible checks (e.g. expert skill with 0 duration, technology release timeline violations, career span exceeding stated YoE, company founding date violations). Deliberately avoids overly-aggressive traps (education timeline overlaps, salary data noise) that could exclude legitimate candidates.
 
 ### 2. Semantic Similarity Matching
 Uses the CPU-friendly **`all-MiniLM-L6-v2`** model to encode candidates' headlines, summary previews, current titles, and past job histories.
