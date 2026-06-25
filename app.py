@@ -54,8 +54,16 @@ def execute_pipeline(input_file, progress=gr.Progress()):
 
     progress(1.0, desc="Done!")
     log_text = result.stdout or "Pipeline completed successfully."
-    status = f"\u2705 Ranked {len(df)} candidates successfully"
-    return output_csv, preview, status, log_text
+    status = f"✅ Ranked {len(df)} candidates successfully"
+
+    # Copy output to system temp directory to ensure Gradio's sandbox allows downloading it
+    import shutil
+    import tempfile
+    temp_dir = tempfile.gettempdir()
+    temp_csv = os.path.join(temp_dir, "submission.csv")
+    shutil.copy2(output_csv, temp_csv)
+
+    return temp_csv, preview, status, log_text
 
 
 # ── Theme & CSS ──────────────────────────────────────────────────────────
@@ -130,4 +138,8 @@ with gr.Blocks(title="TopRank \u2014 Candidate Ranking Engine",
     )
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    demo.launch(
+        server_name="0.0.0.0",
+        server_port=7860,
+        allowed_paths=[APP_DIR]
+    )
