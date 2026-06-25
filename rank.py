@@ -64,13 +64,18 @@ def main():
         import warnings
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UserWarning)
-            # Try to load model locally only
+            # Try to load model locally first, then try hub, then fallback
             try:
                 model = CrossEncoder("BAAI/bge-reranker-v2-m3", device="cpu", local_files_only=True)
                 print("Loaded cached BAAI/bge-reranker-v2-m3 cross-encoder.")
-            except Exception as e:
-                print(f"Local BAAI/bge-reranker-v2-m3 cross-encoder not found: {e}. Falling back to precomputed similarities.")
-                raise e
+            except Exception as e_local:
+                try:
+                    print("Local cross-encoder not found. Attempting to load from Hugging Face Hub...")
+                    model = CrossEncoder("BAAI/bge-reranker-v2-m3", device="cpu", local_files_only=False)
+                    print("Loaded BAAI/bge-reranker-v2-m3 cross-encoder from Hugging Face Hub.")
+                except Exception as e_hub:
+                    print(f"Failed to load cross-encoder from Hub: {e_hub}. Falling back to precomputed similarities.")
+                    raise e_hub
 
         # Get top 200 candidate IDs based on baseline scoring
         top200_candidates = features_df.sort_values(by=['score', 'candidate_id'], ascending=[False, True]).head(200)
