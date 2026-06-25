@@ -109,7 +109,7 @@ def extract_features_record(row) -> dict:
         'skills_count': len(skills),
         'recruiter_response_rate': float(signals.get('recruiter_response_rate', 0.0) or 0.0),
         'interview_completion_rate': float(signals.get('interview_completion_rate', 0.0) or 0.0),
-        'offer_acceptance_rate': float(signals.get('offer_acceptance_rate', 0.0) or 0.0),
+        'offer_acceptance_rate': float(signals.get('offer_acceptance_rate')) if signals.get('offer_acceptance_rate') is not None and float(signals.get('offer_acceptance_rate')) >= 0.0 else 0.475,
         'notice_period_days': float(signals.get('notice_period_days', 90.0) or 90.0),
         'open_to_work_flag': 1.0 if signals.get('open_to_work_flag') else 0.0
     }
