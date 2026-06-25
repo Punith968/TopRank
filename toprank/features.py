@@ -93,6 +93,17 @@ def extract_features_record(row) -> dict:
         except (ValueError, TypeError):
             engagement_score = 0.5
 
+    # NEW: Non-technical role detection to prevent keyword-stuffing exploit
+    current_title = str(profile.get('current_title', '')).lower()
+    non_tech_kws = [
+        'hr', 'human resources', 'recruiter', 'talent acquisition',
+        'sales', 'marketing', 'accountant', 'accounting',
+        'mechanical', 'civil', 'designer', 'writer', 'support',
+        'operations', 'project manager', 'business analyst', 'finance', 'financial',
+        'product manager', 'customer support', 'graphic designer'
+    ]
+    is_non_tech = 1.0 if any(kw in current_title for kw in non_tech_kws) else 0.0
+
     return {
         'candidate_id': row.get('candidate_id'),
         'years_of_experience': yoe,
@@ -105,6 +116,7 @@ def extract_features_record(row) -> dict:
         'keyword_stuffer': keyword_stuffer,
         'is_langchain_only': is_langchain_only,
         'is_cv_speech_only': is_cv_speech_only,
+        'is_non_tech': is_non_tech,
         'engagement_score': engagement_score,
         'skills_count': len(skills),
         'recruiter_response_rate': float(signals.get('recruiter_response_rate', 0.0) or 0.0),

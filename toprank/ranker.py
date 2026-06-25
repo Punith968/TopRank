@@ -3,10 +3,10 @@ import pandas as pd
 
 WEIGHTS = {
     'semantic_similarity': 0.25,
-    'career_trajectory': 0.25,
-    'skill_relevance': 0.20,
-    'behavioral_signals': 0.20,
-    'availability': 0.10,
+    'career_trajectory': 0.45,
+    'skill_relevance': 0.15,
+    'behavioral_signals': 0.10,
+    'availability': 0.05,
 }
 
 def compute_final_score(features_df: pd.DataFrame, similarities: np.ndarray) -> np.ndarray:
@@ -31,6 +31,8 @@ def compute_final_score(features_df: pd.DataFrame, similarities: np.ndarray) -> 
             c_score -= 0.15
         if row.get('is_cv_speech_only', 0) > 0.5:
             c_score -= 0.15
+        if row.get('is_non_tech', 0) > 0.5:
+            c_score -= 0.8
         c_score = max(0.0, c_score)
         
         sk_count = row['skills_count']
