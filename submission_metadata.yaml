@@ -8,12 +8,12 @@ team_name: "Punith C"
 
 primary_contact:
   name: "Punith C"
-  email: "punith.kumar@example.com"   # TODO: Replace with your real email before submission
-  phone: "+91-9876543210"             # TODO: Replace with your real phone before submission
+  email: "punithc2005@gmail.com"
+  phone: "+91-9686587975"
 
 team_members:
   - name: "Punith C"
-    email: "punith.kumar@example.com"  # TODO: Replace with your real email
+    email: "punithc2005@gmail.com"
     role: "ML Engineer"
 
 # ============================================================================
@@ -56,7 +56,7 @@ ai_usage_summary: |
 methodology_summary: |
   We use a hybrid approach that separates heavy semantic model inference from ranking runtime:
   1. Offline Pre-computation: Embed candidate profiles and compute cosine similarity against the job description using all-MiniLM-L6-v2, saving scores in candidate_embeddings.npz.
-  2. Honeypot Firewall: Evaluates candidates against 17 strict logical filters (career timeline consistency, tech release date violations, company founding year checks, experience-title mismatch, PhD speed check, overlapping education, and more) to immediately reject anomalies.
+  2. Honeypot Firewall: Evaluates candidates against 10 strict logical filters (career timeline consistency, tech release date violations, company founding year checks, experience-title mismatch, and skill duration checks) to reject clearly fraudulent profiles while preserving legitimate edge cases.
   3. Feature Engineering: Extracts 18 behavioural signals including JD-specific checks (LangChain-only penalty, CV/speech domain penalty, engagement recency from last_active_date) alongside consulting-firm penalties and job-hopper indicators.
   4. Scoring: Weighted combination (semantic=25%, career=25%, skill=20%, behavioral=20%, availability=10%) with Gaussian YoE suitability curve centred at 7 years.
   5. Reasoning: Fact-based, candidate-specific natural language justifications referencing actual profile data (title, company, skills, concerns).
