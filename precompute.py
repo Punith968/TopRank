@@ -72,6 +72,15 @@ def main():
     similarities = cosine_similarity(candidate_embeddings, jd_embedding).flatten()
     
     np.savez_compressed(args.out, candidate_ids=candidate_ids, similarities=similarities)
+
+    print("Pre-downloading BAAI/bge-reranker-v2-m3 cross-encoder...")
+    try:
+        from sentence_transformers import CrossEncoder
+        _ = CrossEncoder("BAAI/bge-reranker-v2-m3")
+        print("BAAI/bge-reranker-v2-m3 cross-encoder cached successfully.")
+    except Exception as e:
+        print(f"Warning: Failed to pre-download BAAI/bge-reranker-v2-m3: {e}")
+
     print(f"Finished in {time.time() - start_time:.2f}s.")
 
 if __name__ == '__main__':

@@ -55,10 +55,82 @@ def main():
 
     print("Computing final composite fit scores...")
     final_scores = compute_final_score(features_df, similarities)
-    
     features_df['score'] = final_scores
     features_df['semantic_similarity'] = similarities
-    
+
+    # Optional BAAI/bge-reranker-v2-m3 Cross-Encoder Reranking for top 200 candidates
+    try:
+        from sentence_transformers import CrossEncoder
+        import warnings
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UserWarning)
+            # Try to load model locally only
+            try:
+                model = CrossEncoder("BAAI/bge-reranker-v2-m3", device="cpu", local_files_only=True)
+                print("Loaded cached BAAI/bge-reranker-v2-m3 cross-encoder.")
+            except Exception as e:
+                print(f"Local BAAI/bge-reranker-v2-m3 cross-encoder not found: {e}. Falling back to precomputed similarities.")
+                raise e
+
+        # Get top 200 candidate IDs based on baseline scoring
+        top200_candidates = features_df.sort_values(by=['score', 'candidate_id'], ascending=[False, True]).head(200)
+        top200_ids = top200_candidates['candidate_id'].tolist()
+
+        # Build lookup for raw candidates
+        raw_lookup = df[df['candidate_id'].isin(top200_ids)].set_index('candidate_id')
+
+        # Build query-candidate pairs
+        pairs = []
+        c_ids = []
+        JD_TEXT = """
+        Senior AI Engineer role at a Series A AI startup. We need deep technical depth in modern ML systems—embeddings, retrieval, ranking, LLMs, fine-tuning, and a scrappy product-engineering attitude.
+        Production experience with embeddings-based retrieval systems (sentence-transformers, BGE, E5) deployed to real users.
+        Production experience with vector databases or hybrid search infrastructure (Pinecone, Weaviate, Qdrant, Milvus, OpenSearch, Elasticsearch, FAISS).
+        Strong Python. Hands-on experience designing evaluation frameworks for ranking systems (NDCG, MRR, MAP, offline-to-online correlation, A/B test interpretation).
+        """
+        for cid in top200_ids:
+            raw_cand = raw_lookup.loc[cid]
+            profile = raw_cand.get('profile', {}) or {}
+            summary = profile.get('summary', '')
+            summary_words = summary.split()[:35]
+            parts = [
+                profile.get('headline', ''),
+                ' '.join(summary_words),
+                profile.get('current_title', ''),
+            ]
+            for job in raw_cand.get('career_history', []):
+                if isinstance(job, dict):
+                    parts.append(job.get('title', ''))
+            cand_text = ' '.join(filter(None, parts)).lower()
+            pairs.append([JD_TEXT, cand_text])
+            c_ids.append(cid)
+
+        print(f"Reranking {len(pairs)} candidates with BAAI/bge-reranker-v2-m3 on CPU...")
+        ce_scores = model.predict(pairs, batch_size=32)
+
+        # Min-max scale the cross-encoder scores to [0.4, 0.95] to blend with semantic similarity scale
+        ce_min = ce_scores.min()
+        ce_max = ce_scores.max()
+        if ce_max > ce_min:
+            scaled_scores = 0.4 + 0.55 * (ce_scores - ce_min) / (ce_max - ce_min)
+        else:
+            scaled_scores = np.full(len(ce_scores), 0.7)
+
+        # Update similarities in features_df
+        ce_map = dict(zip(c_ids, scaled_scores))
+        for idx, row in features_df.iterrows():
+            cid = row['candidate_id']
+            if cid in ce_map:
+                similarities[idx] = ce_map[cid]
+
+        print("Recomputing final scores with Cross-Encoder similarities...")
+        final_scores = compute_final_score(features_df, similarities)
+        features_df['score'] = final_scores
+        features_df['semantic_similarity'] = similarities
+
+    except Exception as e:
+        print(f"Cross-Encoder reranking skipped/unavailable ({type(e).__name__}). Using pre-computed similarities.")
+
     print("Ranking and resolving ties deterministically...")
     features_df = features_df.sort_values(by=['score', 'candidate_id'], ascending=[False, True]).reset_index(drop=True)
     
