@@ -1,5 +1,11 @@
 import pandas as pd
-from datetime import datetime
+
+
+def _num(value, default=0.0):
+    try:
+        return float(value) if value is not None else float(default)
+    except (TypeError, ValueError):
+        return float(default)
 
 def is_bachelor(degree_str):
     d = str(degree_str).strip().lower().replace('.', '')
@@ -27,12 +33,12 @@ def detect_honeypot_record(row) -> bool:
     # Trap 1: Expert skill with 0 duration_months — clearly impossible
     for skill in skills:
         if isinstance(skill, dict):
-            if skill.get('proficiency') == 'expert' and skill.get('duration_months', 0) == 0:
+            if skill.get('proficiency') == 'expert' and _num(skill.get('duration_months')) == 0:
                 return True
 
     # Trap 2: Experience vs career history duration inconsistency
-    total_career_months = sum(job.get('duration_months', 0) for job in career if isinstance(job, dict))
-    yoe = float(profile.get('years_of_experience', 0) or 0)
+    total_career_months = sum(_num(job.get('duration_months')) for job in career if isinstance(job, dict))
+    yoe = _num(profile.get('years_of_experience'))
     if yoe > 0:
         if total_career_months > (yoe * 12 + 36):
             return True
@@ -43,7 +49,7 @@ def detect_honeypot_record(row) -> bool:
         return True
 
     # Trap 6: Notice period impossible (negative)
-    if signals.get('notice_period_days', 0) < 0:
+    if _num(signals.get('notice_period_days')) < 0:
         return True
 
     # Trap 7: Date sequence impossibility — education end < start
@@ -57,7 +63,7 @@ def detect_honeypot_record(row) -> bool:
     # Trap 8: Skill duration far exceeds YoE
     for skill in skills:
         if isinstance(skill, dict):
-            dur = skill.get('duration_months', 0) or 0
+            dur = _num(skill.get('duration_months'))
             if yoe > 0 and dur > (yoe * 12 + 24):
                 return True
 
@@ -69,7 +75,7 @@ def detect_honeypot_record(row) -> bool:
     for skill in skills:
         if isinstance(skill, dict):
             sname = str(skill.get('name', '')).lower()
-            dur = skill.get('duration_months', 0) or 0
+            dur = _num(skill.get('duration_months'))
             for tech, max_dur in recent_techs.items():
                 if tech in sname and dur > max_dur:
                     return True
@@ -97,7 +103,7 @@ def detect_honeypot_record(row) -> bool:
     for skill in skills:
         if isinstance(skill, dict):
             prof_level = str(skill.get('proficiency', '')).lower()
-            dur = skill.get('duration_months', 0) or 0
+            dur = _num(skill.get('duration_months'))
             if prof_level == 'expert' and dur < 6:
                 return True
             elif prof_level == 'advanced' and dur < 3:
