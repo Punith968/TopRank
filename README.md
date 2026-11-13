@@ -1,5 +1,9 @@
 # TopRank
 
+[![Quality](https://github.com/Punith968/TopRank/actions/workflows/quality.yml/badge.svg)](https://github.com/Punith968/TopRank/actions/workflows/quality.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+![Python 3.11](https://img.shields.io/badge/python-3.11-blue)
+
 A deterministic candidate screening and ranking engine built around a multi-stage retrieval and scoring pipeline.
 
 > **Important:** Benchmark figures in this README are project measurements, not universal guarantees. Re-run the benchmark on your hardware and dataset before using them as performance claims.
@@ -17,6 +21,8 @@ TopRank processes candidate profiles through:
 7. Candidate-specific, fact-based explanations
 
 The scoring pipeline is intentionally deterministic: the same inputs and configuration produce the same ordering.
+
+Built for the Redrob candidate-ranking hackathon: rank 100K synthetic candidate profiles against a *Senior AI Engineer* job description and return the top 100 with an explanation for each.
 
 ## Architecture
 
@@ -44,15 +50,23 @@ Feature extraction ----> Semantic similarity index
 ## Repository structure
 
 ```text
-data/                    Dataset schemas and small samples
-docs/                    Design documentation
-toprank/                 Core ranking engine
+toprank/
+  dataloader.py          JSONL / JSON / .gz candidate loading
+  firewall.py            Anomaly ("honeypot") detection for impossible profiles
+  features.py            Career, skill, behavioural and availability features
+  ranker.py              Weighted composite fit score
+  nlg.py                 Fact-based, per-candidate explanations
+rank.py                  CLI pipeline (optional BGE cross-encoder rerank of the top 200)
+precompute.py            Offline sentence-embedding similarities -> candidate_embeddings.npz
 app.py                   Gradio interface
-rank.py                  CLI pipeline
-precompute.py            Offline embedding preparation
-validate_submission.py   Output validation
-requirements.txt         Python dependencies
+validate_submission.py   Output-format validator
+data/                    Candidate schema and a 50-profile sample
+docs/                    Solution architecture and diagram
+submission/              Hackathon submission (ranking CSV, deck, metadata)
+tests/                   pytest suite
 ```
+
+`candidate_embeddings.npz` is stored with Git LFS. Run `git lfs pull` after cloning. Without it the pipeline still runs, using a neutral similarity of 0.5.
 
 Large/private candidate datasets are not required for the sample workflow.
 
@@ -72,12 +86,20 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Run the pipeline with an available candidate dataset:
+Try it on the bundled 50-profile sample (no model download needed):
+
+```bash
+python rank.py --candidates data/sample_candidates.json --out ranking.csv --no-rerank
+```
+
+On the full hackathon dataset, with cross-encoder reranking:
 
 ```bash
 python rank.py --candidates ./data/candidates.jsonl --out ./submission.csv
 python validate_submission.py submission.csv
 ```
+
+`rank.py` accepts `.jsonl`, `.jsonl.gz` and `.json` (array) inputs. `--embeddings PATH` points to a different similarity file.
 
 Run the interactive dashboard:
 
@@ -89,7 +111,19 @@ Then open the local URL printed by Gradio.
 
 ## Scoring model
 
-The repository's current scoring configuration combines semantic, career, skill, behavioural, and availability signals. The exact implementation in `toprank/ranker.py` is the source of truth; update this README when weights or features change.
+Each candidate that passes the firewall gets a weighted score (`toprank/ranker.py` is the source of truth):
+
+| Component | Weight | Signals |
+|---|---|---|
+| Career trajectory | 0.45 | Gaussian fit around 7 years of experience; penalties for consulting-only careers, job hopping (3+ stints under 18 months), no current production role, pure research, LangChain-only or CV/speech-only skills, and non-technical titles |
+| Semantic similarity | 0.25 | Profile-to-JD embedding similarity (precomputed), replaced by scaled BGE-reranker scores for the top 200 |
+| Skill relevance | 0.15 | Log-scaled skill count, with a penalty for keyword stuffing (more than 40 skills) |
+| Behavioural signals | 0.10 | Recruiter response, interview completion, offer acceptance, activity recency, GitHub presence |
+| Availability | 0.05 | Notice period (≤15 / ≤30 / ≤60 / >60 days), open-to-work flag |
+
+Ties are broken by `candidate_id`, and the top-100 scores are min-max normalized to [0, 1].
+
+The firewall removes profiles with logically impossible data before scoring. Examples are expert skills used for 0 months, experience with a tool longer than the tool has existed, jobs at companies before they were founded, education that ends before it starts, and senior titles with under 3 years of experience.
 
 ## Evaluation
 
@@ -105,14 +139,22 @@ For reproducible evaluation, record:
 
 Avoid interpreting runtime or ranking quality from one machine or one dataset as a general guarantee.
 
-## Development
-
-Useful checks:
+## Testing
 
 ```bash
-python -m compileall -q .
+pip install pandas numpy pytest
+python -m pytest -q tests
+```
+
+36 tests cover feature extraction (including null and zero-valued signals), every firewall trap, scoring properties (determinism, monotonicity in similarity and notice period, the experience curve), the end-to-end CLI on the sample data, the Git LFS pointer fallback, and the submission validator. GitHub Actions runs them on every push and pull request.
+
+## Development
+
+```bash
 python validate_submission.py <submission.csv>
 ```
+
+The committed `submission/Punith C.csv` was produced before the feature fixes in this revision (notice period 0 vs. missing, whole-word title matching). Re-running on the full dataset can therefore change a few positions.
 
 Keep changes focused and document changes to scoring logic or validation rules.
 
@@ -124,4 +166,4 @@ This project should be treated as an engineering/research prototype, not as an a
 
 ## License
 
-See `LICENSE`.
+[MIT](LICENSE) © Punith C

@@ -1,5 +1,17 @@
-import pandas as pd
+import re
 from datetime import datetime
+
+import pandas as pd
+
+
+def _num(value, default):
+    """Coerce to float, using `default` only for missing/invalid values (not for 0)."""
+    if value is None:
+        return float(default)
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return float(default)
 
 CONSULTING_FIRMS = {
     'tcs', 'infosys', 'wipro', 'accenture', 'cognizant', 'capgemini',
@@ -38,7 +50,7 @@ def extract_features_record(row) -> dict:
     skills = row.get('skills', []) or []
     signals = row.get('redrob_signals', {}) or {}
 
-    yoe = float(profile.get('years_of_experience', 0) or 0)
+    yoe = _num(profile.get('years_of_experience'), 0)
     
     total_jobs = len(career)
     consulting_jobs = 0
@@ -51,11 +63,11 @@ def extract_features_record(row) -> dict:
     consulting_ratio = consulting_jobs / total_jobs if total_jobs > 0 else 0.0
     is_only_consulting = 1.0 if (total_jobs > 0 and consulting_jobs == total_jobs) else 0.0
 
-    tenures = [job.get('duration_months', 0) or 0 for job in career if isinstance(job, dict)]
+    tenures = [_num(job.get('duration_months'), 0) for job in career if isinstance(job, dict)]
     avg_tenure = sum(tenures) / len(tenures) if tenures else 24.0
     job_hopper = 1.0 if (avg_tenure < 18.0 and len(tenures) >= 3) else 0.0
 
-    has_github = 1.0 if signals.get('github_activity_score', -1) >= 0 else 0.0
+    has_github = 1.0 if _num(signals.get('github_activity_score'), -1) >= 0 else 0.0
     no_production = 0.0
     if total_jobs > 0:
         current_jobs = [job for job in career if isinstance(job, dict) and job.get('is_current')]
@@ -102,7 +114,11 @@ def extract_features_record(row) -> dict:
         'operations', 'project manager', 'business analyst', 'finance', 'financial',
         'product manager', 'customer support', 'graphic designer'
     ]
-    is_non_tech = 1.0 if any(kw in current_title for kw in non_tech_kws) else 0.0
+    # Whole-word matching: a plain substring test flagged e.g. "Threat Analyst"
+    # as HR ("t-hr-eat") and "Supportability Engineer" as support.
+    is_non_tech = 1.0 if any(re.search(rf"\b{re.escape(kw)}\b", current_title) for kw in non_tech_kws) else 0.0
+
+    oar = _num(signals.get('offer_acceptance_rate'), -1.0)
 
     return {
         'candidate_id': row.get('candidate_id'),
@@ -119,10 +135,12 @@ def extract_features_record(row) -> dict:
         'is_non_tech': is_non_tech,
         'engagement_score': engagement_score,
         'skills_count': len(skills),
-        'recruiter_response_rate': float(signals.get('recruiter_response_rate', 0.0) or 0.0),
-        'interview_completion_rate': float(signals.get('interview_completion_rate', 0.0) or 0.0),
-        'offer_acceptance_rate': float(signals.get('offer_acceptance_rate')) if signals.get('offer_acceptance_rate') is not None and float(signals.get('offer_acceptance_rate')) >= 0.0 else 0.475,
-        'notice_period_days': float(signals.get('notice_period_days', 90.0) or 90.0),
+        'recruiter_response_rate': _num(signals.get('recruiter_response_rate'), 0.0),
+        'interview_completion_rate': _num(signals.get('interview_completion_rate'), 0.0),
+        # Missing or negative (unknown) acceptance rates use the population prior.
+        'offer_acceptance_rate': oar if oar >= 0.0 else 0.475,
+        # 0 days means "can join immediately"; only a missing value defaults to 90.
+        'notice_period_days': _num(signals.get('notice_period_days'), 90.0),
         'open_to_work_flag': 1.0 if signals.get('open_to_work_flag') else 0.0
     }
 

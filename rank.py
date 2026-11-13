@@ -24,6 +24,8 @@ def main():
     parser = argparse.ArgumentParser(description="Deterministic Candidate Ranking Pipeline")
     parser.add_argument("--candidates", required=True, help="Path to candidates.jsonl or candidates.jsonl.gz")
     parser.add_argument("--out", required=True, help="Path to output submission CSV file")
+    parser.add_argument("--embeddings", default=None, help="Pre-computed similarities .npz (default: candidate_embeddings.npz next to this script)")
+    parser.add_argument("--no-rerank", action="store_true", help="Skip the BGE cross-encoder reranking stage")
     args = parser.parse_args()
 
     print("Loading candidates dataset...")
@@ -43,15 +45,20 @@ def main():
     features_df = engineer_features(df)
     
     script_dir = Path(__file__).resolve().parent
-    embeddings_file = script_dir / "candidate_embeddings.npz"
+    embeddings_file = Path(args.embeddings) if args.embeddings else script_dir / "candidate_embeddings.npz"
+    similarities = np.full(len(df), 0.5)
     if embeddings_file.exists():
-        print(f"Loading pre-computed similarities from {embeddings_file}...")
-        data = np.load(embeddings_file, allow_pickle=True)
-        sim_map = dict(zip(data['candidate_ids'], data['similarities']))
-        similarities = df['candidate_id'].map(sim_map).fillna(0.5).values
+        try:
+            data = np.load(embeddings_file, allow_pickle=True)
+            sim_map = dict(zip(data['candidate_ids'], data['similarities']))
+            similarities = df['candidate_id'].map(sim_map).fillna(0.5).to_numpy(dtype=float)
+            print(f"Loaded pre-computed similarities from {embeddings_file}.")
+        except Exception as exc:
+            # e.g. a Git LFS pointer file when the repo was cloned without git-lfs
+            print(f"Warning: could not read {embeddings_file} ({type(exc).__name__}); "
+                  "run `git lfs pull` or precompute.py. Using neutral similarity 0.5.")
     else:
-        print("Warning: pre-computed embeddings file not found. Similarity calculations omitted.")
-        similarities = np.full(len(df), 0.5)
+        print("Warning: pre-computed embeddings file not found. Using neutral similarity 0.5.")
 
     print("Computing final composite fit scores...")
     final_scores = compute_final_score(features_df, similarities)
@@ -60,6 +67,8 @@ def main():
 
     # Optional BAAI/bge-reranker-v2-m3 Cross-Encoder Reranking for top 200 candidates
     try:
+        if args.no_rerank:
+            raise RuntimeError("reranking disabled with --no-rerank")
         from sentence_transformers import CrossEncoder
         import warnings
         with warnings.catch_warnings():
